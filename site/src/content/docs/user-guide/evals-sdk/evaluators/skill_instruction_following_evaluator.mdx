@@ -82,6 +82,10 @@ The `./skills` directory must hold at least one skill, each a subdirectory conta
 `SKILL.md` whose body prescribes a workflow. See
 [Skills](../../concepts/plugins/skills.md) for the layout.
 
+:::caution[Required: Session ID Trace Attributes]
+When using `StrandsInMemorySessionMapper`, you **must** include session ID trace attributes in your agent configuration. This prevents spans from different test cases from being mixed together in the memory exporter.
+:::
+
 ```python
 import asyncio
 
@@ -154,13 +158,15 @@ Coverage is derived from the statuses, weighting `covered` at 1.0, `partial` at 
 
 ## Skipping Behavior
 
-Adherence is unscorable in several situations. Each produces a not-applicable row that is
-excluded from the aggregated mean rather than counted as `0.0`.
+Adherence is unscorable in several situations. Each produces a not-applicable row. Rows
+whose `test_pass` is `True` are excluded from the aggregated mean rather than counted as
+`0.0`. The missing-trajectory row fails and counts as `0.0`, since absent data is not a
+run that had nothing to follow.
 
 | Situation | `reason` | `test_pass` |
 |-----------|----------|-------------|
 | No trajectory supplied | `no trajectory provided` | `False` |
-| No skill was loaded | `no skill invoked` | `True` |
+| No skill was requested | `no skill invoked` | `True` |
 | The harness refused the load | `<skill>: the harness refused the load (<error>), so no instructions were received` | `True` |
 | The trajectory has no skill body | `<skill>: skill body unavailable` | `True` |
 | The body prescribes nothing | `<skill>: no prescribed steps found in the skill body` | `True` |
@@ -170,8 +176,8 @@ not-applicable, but conflating them hides a broken harness behind what looks lik
 capture gap. When the harness supplies a refusal message, that message is included, since
 a misspelled skill name and a harness that mounted nothing call for different fixes.
 
-A skill body carrying only reference material is the last case. Nothing was prescribed, so
-there is nothing to have followed.
+The last row covers a skill body carrying only reference material. Nothing was prescribed,
+so there is nothing to have followed.
 
 ## What the Judge Sees
 

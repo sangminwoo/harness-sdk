@@ -81,6 +81,10 @@ The `./skills` directory must hold at least one skill, each a subdirectory conta
 which surfaces here as all-not-applicable rows. See
 [Skills](../../concepts/plugins/skills.md) for the layout.
 
+:::caution[Required: Session ID Trace Attributes]
+When using `StrandsInMemorySessionMapper`, you **must** include session ID trace attributes in your agent configuration. This prevents spans from different test cases from being mixed together in the memory exporter.
+:::
+
 ```python
 import asyncio
 
@@ -152,15 +156,16 @@ invoked skills produces several rows.
 
 ## Skipping Behavior
 
-Some runs contain no selection decision. These produce a single not-applicable row, which
-is excluded from the aggregated mean rather than counted as `0.0`, so a run that had no
-decision to make is not reported as a failed one.
+Some runs contain no selection decision. These produce a single not-applicable row. Rows
+whose `test_pass` is `True` are excluded from the aggregated mean rather than counted as
+`0.0`, so a run that had no decision to make is not reported as a failed one. A missing
+trajectory is absent data rather than a decision, so that row fails and counts as `0.0`.
 
 | Situation | `reason` | `test_pass` |
 |-----------|----------|-------------|
 | No trajectory supplied | `no trajectory provided` | `False` |
 | A catalog was offered, no skill loaded | `no skill invoked; whether declining was correct is not judged here` | `True` |
-| No skills were available | `no skills were available to select from` | `True` |
+| No catalog in the trajectory (none advertised, or not recorded) | `no skills were available to select from` | `True` |
 
 Whether declining to load a skill was correct depends on the whole offered set rather
 than on any one invocation. That is a session-level question, and out of scope here.
@@ -222,12 +227,13 @@ The file-read path is what covers harnesses absent from this table, such as Code
 
 ### Every result is not applicable
 
-**Problem**: Every row reads either `no skill invoked` or `no skills were available to
-select from`. The second reason is the one to expect when no catalog reached the trace.
+**Problem**: Every row reads either `no skill invoked; whether declining was correct is
+not judged here` or `no skills were available to select from`. The second is the one to
+expect when no catalog reached the trace.
 
-**Solution**: Confirm the agent has a catalog mounted and that the trajectory captures the
-skill's tool calling. A harness whose loads are not recognized looks identical to an agent
-that loaded nothing.
+**Solution**: Confirm the agent was given a skill catalog, and that both the skill-loading
+tool call and its result reached the trace. A harness whose loads are not recognized looks
+identical to an agent that loaded nothing.
 
 ### A correct selection scored No
 

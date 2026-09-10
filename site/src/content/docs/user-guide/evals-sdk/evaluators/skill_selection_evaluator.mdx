@@ -10,7 +10,8 @@ sidebar:
 
 The `SkillSelectionAccuracyEvaluator` evaluates whether each skill an agent loaded was
 an appropriate choice for the task. A skill is a reusable instruction file, usually
-`SKILL.md`, that an agent loads at runtime from a catalog of available skills.
+`SKILL.md`, that an agent loads at runtime from a catalog of available skills. Harness
+here means the framework or CLI that ran the agent and produced the trace.
 
 This evaluator scores the routing decision. Given the task and the catalog the agent was
 shown, was loading this particular skill reasonable? How well the agent then carried out
@@ -150,9 +151,8 @@ Each `EvaluationOutput` carries:
 - **reason**: The invoked skill's name, then the judge's reasoning
 - **label**: `"Yes"`, `"No"`, or `"not_applicable"`
 
-The label carries the verdict rather than the skill name, matching every other judge in
-the framework. Which skill a row describes is named in `reason`, since a run with several
-invoked skills produces several rows.
+A run with several invoked skills produces several rows. `reason` names which skill each
+row describes; `label` carries the verdict.
 
 ## Skipping Behavior
 
@@ -175,20 +175,15 @@ than on any one invocation. That is a session-level question, and out of scope h
 For each invoked skill: the task, the available skills with their descriptions, the one
 skill under evaluation, the serialized trajectory, and the agent's final response.
 
-A fresh judge is created per decision. Reusing one across the loop would carry earlier
-verdicts into later prompts as conversation history and resend the whole trajectory on
-top of them.
-
 When the harness refused a load, the prompt says so and directs the judge to assess
-whether asking for the skill was right, not whether the load worked. The refusal message
-is included, because a skill name the harness did not recognize is a worse pick than a
-good one the harness could not mount.
+whether asking for the skill was right, not whether the load worked. It also passes the
+refusal message, which tells you whether the cause was a misspelled skill name or a
+harness that mounted nothing.
 
 ### When the catalog was not recorded
 
-Not every harness records what it offered, and an empty list would invite the judge to
-conclude the invoked skill did not exist and mark a correct pick wrong. The prompt
-therefore distinguishes three cases:
+Not every harness records what it offered, so the prompt distinguishes three cases rather
+than rendering an unrecorded catalog as an empty one:
 
 | Catalog state | Rendered as |
 |---------------|-------------|

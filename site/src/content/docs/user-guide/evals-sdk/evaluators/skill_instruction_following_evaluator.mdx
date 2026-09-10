@@ -11,7 +11,8 @@ sidebar:
 The `SkillInstructionFollowingEvaluator` evaluates how fully an agent followed the
 prescribed steps of each skill it loaded. A skill is a reusable instruction file, usually
 `SKILL.md`, that an agent loads at runtime; its body typically prescribes an ordered
-workflow.
+workflow. Harness here means the framework or CLI that ran the agent and produced the
+trace.
 
 An agent can load exactly the right skill and still skip half of it. The response often
 still reads well, which is why the final answer alone does not establish that the
@@ -171,10 +172,9 @@ run that had nothing to follow.
 | The trajectory has no skill body | `<skill>: skill body unavailable` | `True` |
 | The body prescribes nothing | `<skill>: no prescribed steps found in the skill body` | `True` |
 
-A refused load is reported separately from a missing body on purpose. Both are
-not-applicable, but conflating them hides a broken harness behind what looks like a
-capture gap. When the harness supplies a refusal message, that message is included, since
-a misspelled skill name and a harness that mounted nothing call for different fixes.
+A refused load and a missing body are reported separately. When the harness supplies a
+refusal message it is included, which tells you whether the cause was a misspelled skill
+name or a harness that mounted nothing.
 
 The last row covers a skill body carrying only reference material. Nothing was prescribed,
 so there is nothing to have followed.
@@ -188,9 +188,7 @@ Two things are stripped from the body before the judge reads it. A leading YAML
 frontmatter block, so the judge sees steps rather than metadata. And the runtime block
 some harnesses append after the skill's own text, listing fields such as `Location:` and
 `Allowed tools:`. Left in, a judge can read `Available resources: scripts/extract.py` as a
-prescribed step nobody wrote. Stripping is keyed on those field names rather than on the
-`---` alone, because a horizontal rule is legal Markdown inside real instructions and
-splitting on it would truncate them.
+prescribed step nobody wrote.
 
 Only the path the run actually took is evaluated. When a skill branches, untaken branches
 are not counted as skipped steps.
